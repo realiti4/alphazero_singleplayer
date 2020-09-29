@@ -5,8 +5,7 @@ Custom game generation function
 """
 import gym
 import numpy as np
-from .wrappers import NormalizeWrapper, ReparametrizeWrapper, PILCOWrapper, ScaleRewardWrapper, ClipRewardWrapper, 
-                    ScaledObservationWrapper
+from .wrappers import NormalizeWrapper, ReparametrizeWrapper, PILCOWrapper, ScaleRewardWrapper, ClipRewardWrapper, ScaledObservationWrapper
 
 # Register deterministic FrozenLakes
 from gym.envs.registration import register
