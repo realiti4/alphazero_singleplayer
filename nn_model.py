@@ -5,8 +5,7 @@ import torch.optim as optim
 
 from nnet import NNet
 
-from helpers import (argmax,check_space,is_atari_game,copy_atari_state,store_safely,
-restore_atari_state,stable_normalizer,smooth,symmetric_remove,Database)
+from helpers import check_space
 
 
 class model_dev:
@@ -54,10 +53,6 @@ class model_dev:
             loss.backward()
             optimizer.step()
 
-            # print('debug')
-
-
-
 
     def predict(self, s):
         s = torch.FloatTensor(s)
@@ -65,15 +60,8 @@ class model_dev:
         self.nnet.eval()
 
         with torch.no_grad():
-
             pi, v = self.nnet(s)
 
         return pi.cpu().numpy()[0], v.cpu().numpy()[0]
 
         print('debug')
-
-    def predict_V(self, s):
-        pass
-
-    def predict_pi(self, s):
-        pass
