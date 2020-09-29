@@ -237,7 +237,7 @@ if __name__ == '__main__':
 
     
     args = parser.parse_args()
-    episode_returns,timepoints,a_best,seed_best,R_best = agent(game=args.game, n_ep=args.n_ep, n_mcts=args.n_mcts, 
+    episode_returns, timepoints, a_best, seed_best, R_best = agent(game=args.game, n_ep=args.n_ep, n_mcts=args.n_mcts, 
                                         max_ep_len=args.max_ep_len, lr=args.lr, c=args.c, gamma=args.gamma, 
                                         data_size=args.data_size, batch_size=args.batch_size, temp=args.temp, 
                                         n_hidden_layers=args.n_hidden_layers, n_hidden_units=args.n_hidden_units)

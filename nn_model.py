@@ -7,6 +7,8 @@ from nnet import NNet
 
 from helpers import check_space
 
+use_cuda = torch.cuda.is_available()
+use_cuda = False
 
 class Model:
     def __init__(self, Env, n_hidden_layers, n_hidden_units):
@@ -21,6 +23,9 @@ class Model:
         # self._hidden_units = n_hidden_units
 
         self.nnet = NNet(Env, n_hidden_layers, n_hidden_units)
+
+        if use_cuda:
+            self.nnet.cuda()
 
     def train(self, sb, vb, pib):
         # optimizer = optim.RMSprop(self.nnet.parameters(), lr=0.001)
@@ -41,8 +46,10 @@ class Model:
             vb = torch.FloatTensor(vb)
             pib = torch.FloatTensor(pib)
 
+            if use_cuda:
+                vb, pib = vb.cuda(), pib.cuda()
+
             v_loss = mse(out_v, vb)
-            # pi_loss = mse(out_pi, pib)
             pi_loss = cross(out_pi, pib.max(1)[0].long())    # TODO fix here
 
             loss = v_loss + pi_loss     # TODO tf.reduce_mean(self.pi_loss)
@@ -56,6 +63,8 @@ class Model:
 
     def predict(self, s):
         s = torch.FloatTensor(s)
+        if use_cuda:
+            s = s.cuda()
 
         self.nnet.eval()
 
