@@ -5,10 +5,12 @@ One-player Alpha Zero
 @author: Thomas Moerland, Delft University of Technology
 """
 
-import time
 import numpy as np
-import tensorflow as tf
-import tensorflow.contrib.slim as slim
+# import tensorflow as tf
+# import tensorflow.contrib.slim as slim
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import argparse
 import os
 import time
@@ -21,7 +23,7 @@ from helpers import (argmax,check_space,is_atari_game,copy_atari_state,store_saf
 restore_atari_state,stable_normalizer,smooth,symmetric_remove,Database)
 from rl.make_game import make_game
 
-# tf.disable_v2_behavior()
+from nn_model import model_dev
 
 #### Neural Networks ##
 class Model():
@@ -103,13 +105,12 @@ class State():
         self.n = 0
         self.model = model
         
-        self.evaluate()
+        pi, v = self.evaluate()
         # Child actions
         self.na = na
         self.child_actions = [Action(a,parent_state=self,Q_init=self.V) for a in range(na)]
-        self.priors = model.predict_pi(index[None,]).flatten()
-        # print(self.priors, type(self.priors), self.priors.shape)
-        # time.sleep(15)
+        self.priors = pi
+        # self.priors = model.predict_pi(index[None,]).flatten()
     
     def select(self,c=1.5):
         ''' Select one of the child actions based on UCT rule '''
@@ -119,11 +120,11 @@ class State():
 
     def evaluate(self):
         ''' Bootstrap the state value '''
-        self.V = np.squeeze(self.model.predict_V(self.index[None,])) if not self.terminal else np.array(0.0)
-        # print(self.V)
-        # print(self.V.shape)     # () shape is zero
-        # print(type(self.V))
-        # time.sleep(15)      
+        pi, v = self.model.predict(self.index[None, ])
+        v = v[0]
+        self.V = v if not self.terminal else np.array(0.0)
+        return pi, v
+        # self.V = np.squeeze(self.model.predict_V(self.index[None,])) if not self.terminal else np.array(0.0)          
 
     def update(self):
         ''' update count on backward pass '''
@@ -199,6 +200,8 @@ class MCTS():
         else:
             self.root = self.root.child_actions[a].child_state
 
+
+
 #### Agent ##
 def agent(game,n_ep,n_mcts,max_ep_len,lr,c,gamma,data_size,batch_size,temp,n_hidden_layers,n_hidden_units):
     ''' Outer training loop '''
@@ -211,58 +214,57 @@ def agent(game,n_ep,n_mcts,max_ep_len,lr,c,gamma,data_size,batch_size,temp,n_hid
     mcts_env = make_game(game) if is_atari else None
 
     D = Database(max_size=data_size,batch_size=batch_size)        
-    model = Model(Env=Env,lr=lr,n_hidden_layers=n_hidden_layers,n_hidden_units=n_hidden_units)  
+    # model = Model(Env=Env,lr=lr,n_hidden_layers=n_hidden_layers,n_hidden_units=n_hidden_units)
+    model = model_dev(Env=Env, n_hidden_layers=n_hidden_layers,n_hidden_units=n_hidden_units)
     t_total = 0 # total steps   
     R_best = -np.Inf
  
-    with tf.Session() as sess:
-        model.sess = sess
-        sess.run(tf.global_variables_initializer())
-        for ep in range(n_ep):    
-            start = time.time()
-            s = Env.reset() 
-            R = 0.0 # Total return counter
-            a_store = []
-            seed = np.random.randint(1e7) # draw some Env seed
-            Env.seed(seed)      
-            if is_atari: 
-                mcts_env.reset()
-                mcts_env.seed(seed)                                
+    for ep in range(n_ep):    
+        start = time.time()
+        s = Env.reset() 
+        R = 0.0 # Total return counter
+        a_store = []
+        seed = np.random.randint(1e7) # draw some Env seed
+        Env.seed(seed)      
+        if is_atari: 
+            mcts_env.reset()
+            mcts_env.seed(seed)                                
 
-            mcts = MCTS(root_index=s,root=None,model=model,na=model.action_dim,gamma=gamma) # the object responsible for MCTS searches                             
-            for t in range(max_ep_len):
-                # MCTS step
-                mcts.search(n_mcts=n_mcts,c=c,Env=Env,mcts_env=mcts_env) # perform a forward search
-                state,pi,V = mcts.return_results(temp) # extract the root output
-                D.store((state,V,pi))
+        mcts = MCTS(root_index=s,root=None,model=model,na=model.action_dim,gamma=gamma) # the object responsible for MCTS searches                             
+        for t in range(max_ep_len):
+            # MCTS step
+            mcts.search(n_mcts=n_mcts,c=c,Env=Env,mcts_env=mcts_env) # perform a forward search
+            state,pi,V = mcts.return_results(temp) # extract the root output
+            D.store((state,V,pi))
 
-                # Make the true step
-                a = np.random.choice(len(pi),p=pi)
-                a_store.append(a)
-                s1,r,terminal,_ = Env.step(a)
-                R += r
-                t_total += n_mcts # total number of environment steps (counts the mcts steps)                
+            # Make the true step
+            a = np.random.choice(len(pi),p=pi)
+            a_store.append(a)
+            s1,r,terminal,_ = Env.step(a)
+            R += r
+            t_total += n_mcts # total number of environment steps (counts the mcts steps)                
 
-                if terminal:
-                    break
-                else:
-                    mcts.forward(a,s1)
-            
-            # Finished episode
-            episode_returns.append(R) # store the total episode return
-            timepoints.append(t_total) # store the timestep count of the episode return
-            store_safely(os.getcwd(),'result',{'R':episode_returns,'t':timepoints})  
+            if terminal:
+                break
+            else:
+                mcts.forward(a,s1)
+        
+        # Finished episode
+        episode_returns.append(R) # store the total episode return
+        timepoints.append(t_total) # store the timestep count of the episode return
+        store_safely(os.getcwd(),'result',{'R':episode_returns,'t':timepoints})  
 
-            if R > R_best:
-                a_best = a_store
-                seed_best = seed
-                R_best = R
-            print('Finished episode {}, total return: {}, total time: {} sec'.format(ep,np.round(R,2),np.round((time.time()-start),1)))
-            # Train
-            D.reshuffle()
-            for epoch in range(1):
-                for sb,Vb,pib in D:
-                    model.train(sb,Vb,pib)
+        if R > R_best:
+            a_best = a_store
+            seed_best = seed
+            R_best = R
+        print('Finished episode {}, total return: {}, total time: {} sec'.format(ep,np.round(R,2),np.round((time.time()-start),1)))
+        # Train
+        D.reshuffle()
+        for epoch in range(1):
+            for sb,Vb,pib in D:
+                model.train(sb,Vb,pib)
+
     # Return results
     return episode_returns, timepoints, a_best, seed_best, R_best
 
