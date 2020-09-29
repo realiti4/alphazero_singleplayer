@@ -4,8 +4,6 @@ One-player Alpha Zero
 """
 
 import numpy as np
-# import tensorflow as tf
-# import tensorflow.contrib.slim as slim
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -21,25 +19,25 @@ from helpers import (argmax,check_space,is_atari_game,copy_atari_state,store_saf
 restore_atari_state,stable_normalizer,smooth,symmetric_remove,Database)
 from rl.make_game import make_game
 
-from nn_model import model_dev
+from nn_model import Model
 
 
 ##### MCTS functions #####
       
 class Action():
     ''' Action object '''
-    def __init__(self,index,parent_state,Q_init=0.0):
+    def __init__(self, index, parent_state, Q_init=0.0):
         self.index = index
         self.parent_state = parent_state
         self.W = 0.0
         self.n = 0
         self.Q = Q_init
                 
-    def add_child_state(self,s1,r,terminal,model):
+    def add_child_state(self, s1, r, terminal, model):
         self.child_state = State(s1,r,terminal,self,self.parent_state.na,model)
         return self.child_state
         
-    def update(self,R):
+    def update(self, R):
         self.n += 1
         self.W += R
         self.Q = self.W/self.n
@@ -47,7 +45,7 @@ class Action():
 class State():
     ''' State object '''
 
-    def __init__(self,index,r,terminal,parent_action,na,model):
+    def __init__(self, index, r, terminal, parent_action, na, model):
         ''' Initialize a new state '''
         self.index = index # state
         self.r = r # reward upon arriving in this state
@@ -63,7 +61,7 @@ class State():
         self.priors = pi
         # self.priors = model.predict_pi(index[None,]).flatten()
     
-    def select(self,c=1.5):
+    def select(self, c=1.5):
         ''' Select one of the child actions based on UCT rule '''
         UCT = np.array([child_action.Q + prior * c * (np.sqrt(self.n + 1)/(child_action.n + 1)) for child_action,prior in zip(self.child_actions,self.priors)]) 
         winner = argmax(UCT)
@@ -84,14 +82,14 @@ class State():
 class MCTS():
     ''' MCTS object '''
 
-    def __init__(self,root,root_index,model,na,gamma):
+    def __init__(self, root, root_index, model, na, gamma):
         self.root = None
         self.root_index = root_index
         self.model = model
         self.na = na
         self.gamma = gamma
     
-    def search(self,n_mcts,c,Env,mcts_env):
+    def search(self, n_mcts, c, Env, mcts_env):
         ''' Perform the MCTS search from the root '''
         if self.root is None:
             self.root = State(self.root_index,r=0.0,terminal=False,parent_action=None,na=self.na,model=self.model) # initialize new root
@@ -130,7 +128,7 @@ class MCTS():
                 state = action.parent_state
                 state.update()                
     
-    def return_results(self,temp):
+    def return_results(self, temp):
         ''' Process the output at the root node '''
         counts = np.array([child_action.n for child_action in self.root.child_actions])
         Q = np.array([child_action.Q for child_action in self.root.child_actions])
@@ -138,7 +136,7 @@ class MCTS():
         V_target = np.sum((counts/np.sum(counts))*Q)[None]
         return self.root.index,pi_target,V_target
     
-    def forward(self,a,s1):
+    def forward(self, a, s1):
         ''' Move the root forward '''
         if not hasattr(self.root.child_actions[a],'child_state'):
             self.root = None
@@ -154,7 +152,7 @@ class MCTS():
 
 
 #### Agent ##
-def agent(game,n_ep,n_mcts,max_ep_len,lr,c,gamma,data_size,batch_size,temp,n_hidden_layers,n_hidden_units):
+def agent(game, n_ep, n_mcts, max_ep_len, lr, c, gamma, data_size, batch_size, temp, n_hidden_layers, n_hidden_units):
     ''' Outer training loop '''
     #tf.reset_default_graph()
     episode_returns = [] # storage
@@ -165,8 +163,7 @@ def agent(game,n_ep,n_mcts,max_ep_len,lr,c,gamma,data_size,batch_size,temp,n_hid
     mcts_env = make_game(game) if is_atari else None
 
     D = Database(max_size=data_size,batch_size=batch_size)        
-    # model = Model(Env=Env,lr=lr,n_hidden_layers=n_hidden_layers,n_hidden_units=n_hidden_units)
-    model = model_dev(Env=Env, n_hidden_layers=n_hidden_layers,n_hidden_units=n_hidden_units)
+    model = Model(Env=Env, n_hidden_layers=n_hidden_layers, n_hidden_units=n_hidden_units)
     t_total = 0 # total steps   
     R_best = -np.Inf
  
@@ -181,17 +178,17 @@ def agent(game,n_ep,n_mcts,max_ep_len,lr,c,gamma,data_size,batch_size,temp,n_hid
             mcts_env.reset()
             mcts_env.seed(seed)                                
 
-        mcts = MCTS(root_index=s,root=None,model=model,na=model.action_dim,gamma=gamma) # the object responsible for MCTS searches                             
+        mcts = MCTS(root_index=s, root=None, model=model, na=model.action_dim, gamma=gamma) # the object responsible for MCTS searches                             
         for t in range(max_ep_len):
             # MCTS step
-            mcts.search(n_mcts=n_mcts,c=c,Env=Env,mcts_env=mcts_env) # perform a forward search
-            state,pi,V = mcts.return_results(temp) # extract the root output
-            D.store((state,V,pi))
+            mcts.search(n_mcts=n_mcts, c=c, Env=Env, mcts_env=mcts_env) # perform a forward search
+            state, pi, V = mcts.return_results(temp) # extract the root output
+            D.store((state, V, pi))
 
             # Make the true step
-            a = np.random.choice(len(pi),p=pi)
+            a = np.random.choice(len(pi), p=pi)
             a_store.append(a)
-            s1,r,terminal,_ = Env.step(a)
+            s1, r, terminal, _ = Env.step(a)
             R += r
             t_total += n_mcts # total number of environment steps (counts the mcts steps)                
 
@@ -203,18 +200,18 @@ def agent(game,n_ep,n_mcts,max_ep_len,lr,c,gamma,data_size,batch_size,temp,n_hid
         # Finished episode
         episode_returns.append(R) # store the total episode return
         timepoints.append(t_total) # store the timestep count of the episode return
-        store_safely(os.getcwd(),'result',{'R':episode_returns,'t':timepoints})  
+        store_safely(os.getcwd(), 'result', {'R':episode_returns, 't':timepoints})  
 
         if R > R_best:
             a_best = a_store
             seed_best = seed
             R_best = R
-        print('Finished episode {}, total return: {}, total time: {} sec'.format(ep,np.round(R,2),np.round((time.time()-start),1)))
+        print('Finished episode {}, total return: {}, total time: {} sec'.format(ep, np.round(R, 2), np.round((time.time()-start), 1)))
         # Train
         D.reshuffle()
         for epoch in range(1):
-            for sb,Vb,pib in D:
-                model.train(sb,Vb,pib)
+            for sb, Vb, pib in D:
+                model.train(sb, Vb, pib)
 
     # Return results
     return episode_returns, timepoints, a_best, seed_best, R_best
@@ -223,7 +220,7 @@ def agent(game,n_ep,n_mcts,max_ep_len,lr,c,gamma,data_size,batch_size,temp,n_hid
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--game', default='CartPole-v0',help='Training environment')
+    parser.add_argument('--game', default='CartPole-v0', help='Training environment')
     parser.add_argument('--n_ep', type=int, default=500, help='Number of episodes')
     parser.add_argument('--n_mcts', type=int, default=25, help='Number of MCTS traces per step')
     parser.add_argument('--max_ep_len', type=int, default=300, help='Maximum number of steps per episode')
@@ -240,23 +237,23 @@ if __name__ == '__main__':
 
     
     args = parser.parse_args()
-    episode_returns,timepoints,a_best,seed_best,R_best = agent(game=args.game,n_ep=args.n_ep,n_mcts=args.n_mcts,
-                                        max_ep_len=args.max_ep_len,lr=args.lr,c=args.c,gamma=args.gamma,
-                                        data_size=args.data_size,batch_size=args.batch_size,temp=args.temp,
-                                        n_hidden_layers=args.n_hidden_layers,n_hidden_units=args.n_hidden_units)
+    episode_returns,timepoints,a_best,seed_best,R_best = agent(game=args.game, n_ep=args.n_ep, n_mcts=args.n_mcts, 
+                                        max_ep_len=args.max_ep_len, lr=args.lr, c=args.c, gamma=args.gamma, 
+                                        data_size=args.data_size, batch_size=args.batch_size, temp=args.temp, 
+                                        n_hidden_layers=args.n_hidden_layers, n_hidden_units=args.n_hidden_units)
 
     # Finished training: Visualize
-    fig,ax = plt.subplots(1,figsize=[7,5])
+    fig, ax = plt.subplots(1, figsize=[7, 5])
     total_eps = len(episode_returns)
-    episode_returns = smooth(episode_returns,args.window,mode='valid') 
-    ax.plot(symmetric_remove(np.arange(total_eps),args.window-1),episode_returns,linewidth=4,color='darkred')
+    episode_returns = smooth(episode_returns, args.window, mode='valid') 
+    ax.plot(symmetric_remove(np.arange(total_eps), args.window-1), episode_returns, linewidth=4, color='darkred')
     ax.set_ylabel('Return')
-    ax.set_xlabel('Episode',color='darkred')
-    plt.savefig(os.getcwd()+'/learning_curve.png',bbox_inches="tight",dpi=300)
+    ax.set_xlabel('Episode', color='darkred')
+    plt.savefig(os.getcwd()+'/learning_curve.png', bbox_inches="tight", dpi=300)
     
 #    print('Showing best episode with return {}'.format(R_best))
 #    Env = make_game(args.game)
-#    Env = wrappers.Monitor(Env,os.getcwd() + '/best_episode',force=True)
+#    Env = wrappers.Monitor(Env, os.getcwd() + '/best_episode', force=True)
 #    Env.reset()
 #    Env.seed(seed_best)
 #    for a in a_best:

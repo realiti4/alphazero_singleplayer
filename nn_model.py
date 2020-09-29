@@ -8,7 +8,7 @@ from nnet import NNet
 from helpers import check_space
 
 
-class model_dev:
+class Model:
     def __init__(self, Env, n_hidden_layers, n_hidden_units):
         # super(model_dev, self).__init__()
 
