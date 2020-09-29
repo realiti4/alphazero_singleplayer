@@ -2,6 +2,8 @@
 
 This is Pytorch implementation of tmoer/alphazero_singleplayer
 
+Simply run `alphazero_pytorch.py`
+
 
 #### Original implementation
 
