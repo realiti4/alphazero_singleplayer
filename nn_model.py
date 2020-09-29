@@ -8,7 +8,7 @@ from nnet import NNet
 from helpers import check_space
 
 use_cuda = torch.cuda.is_available()
-use_cuda = False
+# use_cuda = False
 
 class Model:
     def __init__(self, Env, n_hidden_layers, n_hidden_units):
@@ -34,21 +34,19 @@ class Model:
         mse = nn.MSELoss()
         cross = nn.CrossEntropyLoss()
 
-        for i in range(10):
-            self.nnet.train()
+        vb = torch.FloatTensor(vb)
+        pib = torch.FloatTensor(pib)
+        sb = torch.FloatTensor(sb)
 
-            sb = torch.FloatTensor(sb)
+        if use_cuda:
+            sb, vb, pib = sb.cuda(), vb.cuda(), pib.cuda()
+
+        for i in range(10):
+            self.nnet.train()   
 
             out_pi, out_v = self.nnet(sb)
 
-
-            # Loss
-            vb = torch.FloatTensor(vb)
-            pib = torch.FloatTensor(pib)
-
-            if use_cuda:
-                vb, pib = vb.cuda(), pib.cuda()
-
+            # Loss          
             v_loss = mse(out_v, vb)
             pi_loss = cross(out_pi, pib.max(1)[0].long())    # TODO fix here
 
