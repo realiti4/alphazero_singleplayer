@@ -5,7 +5,8 @@ Custom game generation function
 """
 import gym
 import numpy as np
-from .wrappers import NormalizeWrapper,ReparametrizeWrapper,PILCOWrapper,ScaleRewardWrapper,ClipRewardWrapper,ScaledObservationWrapper
+from .wrappers import NormalizeWrapper, ReparametrizeWrapper, PILCOWrapper, ScaleRewardWrapper, ClipRewardWrapper, 
+                    ScaledObservationWrapper
 
 # Register deterministic FrozenLakes
 from gym.envs.registration import register
@@ -26,18 +27,18 @@ register(
 
 def get_base_env(env):
     ''' removes all wrappers '''
-    while hasattr(env,'env'):
+    while hasattr(env, 'env'):
         env = env.env
     return env
 
 def is_atari_game(env):
     ''' Verify whether game uses the Arcade Learning Environment '''
     env = get_base_env(env)
-    return hasattr(env,'ale')
+    return hasattr(env, 'ale')
 
 def make_game(game):
     ''' Modifications to Env '''
-    name,version = game.rsplit('-',1)
+    name, version = game.rsplit('-', 1)
     if len(version) > 2:
         modify = version[2:]
         game = name + '-' + version[:2]
@@ -53,10 +54,10 @@ def make_game(game):
     if is_atari_game(env):
         env = prepare_atari_env(env)
     else:
-        env = prepare_control_env(env,game,modify)
+        env = prepare_control_env(env, game, modify)
     return env
 
-def prepare_control_env(env,game,modify):
+def prepare_control_env(env, game, modify):
     if 'n' in modify and type(env.observation_space) == gym.spaces.Box:
         print('Normalizing input space')        
         env = NormalizeWrapper(env)        
@@ -70,10 +71,10 @@ def prepare_control_env(env,game,modify):
         env = ScaleRewardWrapper(env)
     
     if 'CartPole' in game:
-        env.observation_space = gym.spaces.Box(np.array([-4.8,-10,-4.8,-10]),np.array([4.8,10,4.8,10]))        
+        env.observation_space = gym.spaces.Box(np.array([-4.8, -10, -4.8, -10]), np.array([4.8, 10, 4.8, 10]))        
     return env
 
-def prepare_atari_env(Env,frame_skip=3,repeat_action_prob=0.0,reward_clip=True):
+def prepare_atari_env(Env, frame_skip=3, repeat_action_prob=0.0, reward_clip=True):
     ''' Initialize an Atari environment '''
     env = get_base_env(Env)
     env.ale.setFloat('repeat_action_probability'.encode('utf-8'), repeat_action_prob)

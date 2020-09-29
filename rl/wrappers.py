@@ -27,10 +27,10 @@ class ObservationRewardWrapper(gym.Wrapper):
 
 def get_name(env):
     while True:
-        if hasattr(env,'_spec'):
+        if hasattr(env, '_spec'):
             name = env._spec.id
             break
-        elif hasattr(env,'spec'): 
+        elif hasattr(env, 'spec'): 
             name = env.spec.id
             break
         else:
@@ -58,17 +58,17 @@ class ScaleRewardWrapper(ObservationRewardWrapper):
     def reward(self, reward):
         """ Rescale reward """
         if 'Pendulum' in self.name:
-            return np.float32(reward/1000.0)
+            return np.float32(reward / 1000.0)
         #elif 'MountainCarContinuous' in self.name:
         #    return np.float32(reward/500.0)
         elif 'Lunarlander' in self.name:
-            return np.float32(reward/250.0)
+            return np.float32(reward / 250.0)
         elif 'CartPole' in self.name:
-            return reward/250.0
+            return reward / 250.0
         elif 'MountainCar' in self.name:
-            return reward/250.0
+            return reward / 250.0
         elif 'Acrobot' in self.name:
-            return reward/250.0
+            return reward / 250.0
         else:
             return reward
           
@@ -80,9 +80,9 @@ class ReparametrizeWrapper(ObservationRewardWrapper):
 
     def step(self, action):
         observation, reward, terminal, info = self.env.step(action)
-        return self.observation(observation), self.reward(reward,terminal), terminal, info
+        return self.observation(observation), self.reward(reward, terminal), terminal, info
 
-    def reward(self,r,terminal):
+    def reward(self, r, terminal):
         if 'CartPole' in self.name:
             if terminal:
                 r = -1
@@ -110,9 +110,9 @@ class PILCOWrapper(ObservationRewardWrapper):
         observation, reward, terminal, info = self.env.step(action)
         return self.observation(observation), self.reward(observation), terminal, info
 
-    def reward(self,s):
+    def reward(self, s):
         if 'CartPole' in self.name:
-            target = np.array([0.0,0.0,0.0,0.0])
+            target = np.array([0.0, 0.0, 0.0, 0.0])
         elif 'Acrobot' in self.name:
             target = np.array([1.0])
             s = -np.cos(s[0]) - np.cos(s[1] + s[0])
@@ -120,10 +120,10 @@ class PILCOWrapper(ObservationRewardWrapper):
             target = np.array([0.5])
             s = s[0]
         elif 'Pendulum' in self.name:
-            target = np.array([0.0,0.0])
+            target = np.array([0.0, 0.0])
         else:
             raise ValueError('no PILCO reward mofication for this game')
-        return 1 - multivariate_normal.pdf(s,mean=target)
+        return 1 - multivariate_normal.pdf(s, mean=target)
     
 class ClipRewardWrapper(ObservationRewardWrapper):
     
