@@ -15,8 +15,8 @@ from gym import wrappers
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
-from helpers import (argmax,check_space,is_atari_game,copy_atari_state,store_safely,
-restore_atari_state,stable_normalizer,smooth,symmetric_remove,Database)
+from helpers import (argmax, check_space, is_atari_game, copy_atari_state, store_safely,
+                restore_atari_state, stable_normalizer, smooth, symmetric_remove, Database)
 from rl.make_game import make_game
 
 from nn_model import Model
@@ -34,13 +34,13 @@ class Action():
         self.Q = Q_init
                 
     def add_child_state(self, s1, r, terminal, model):
-        self.child_state = State(s1,r,terminal,self,self.parent_state.na,model)
+        self.child_state = State(s1, r, terminal, self, self.parent_state.na, model)
         return self.child_state
         
     def update(self, R):
         self.n += 1
         self.W += R
-        self.Q = self.W/self.n
+        self.Q = self.W / self.n
 
 class State():
     ''' State object '''
@@ -57,13 +57,13 @@ class State():
         pi, v = self.evaluate()
         # Child actions
         self.na = na
-        self.child_actions = [Action(a,parent_state=self,Q_init=self.V) for a in range(na)]
+        self.child_actions = [Action(a, parent_state=self, Q_init=self.V) for a in range(na)]
         self.priors = pi
         # self.priors = model.predict_pi(index[None,]).flatten()
     
     def select(self, c=1.5):
         ''' Select one of the child actions based on UCT rule '''
-        UCT = np.array([child_action.Q + prior * c * (np.sqrt(self.n + 1)/(child_action.n + 1)) for child_action,prior in zip(self.child_actions,self.priors)]) 
+        UCT = np.array([child_action.Q + prior * c * (np.sqrt(self.n + 1) / (child_action.n + 1)) for child_action,prior in zip(self.child_actions,self.priors)]) 
         winner = argmax(UCT)
         return self.child_actions[winner]
 
@@ -92,7 +92,7 @@ class MCTS():
     def search(self, n_mcts, c, Env, mcts_env):
         ''' Perform the MCTS search from the root '''
         if self.root is None:
-            self.root = State(self.root_index,r=0.0,terminal=False,parent_action=None,na=self.na,model=self.model) # initialize new root
+            self.root = State(self.root_index, r=0.0, terminal=False, parent_action=None, na=self.na, model=self.model) # initialize new root
         else:
             self.root.parent_action = None # continue from current root
         if self.root.terminal:
@@ -111,12 +111,12 @@ class MCTS():
             
             while not state.terminal: 
                 action = state.select(c=c)
-                s1,r,t,_ = mcts_env.step(action.index)
-                if hasattr(action,'child_state'):
+                s1, r, t, _ = mcts_env.step(action.index)
+                if hasattr(action, 'child_state'):
                     state = action.child_state # select
                     continue
                 else:
-                    state = action.add_child_state(s1,r,t,self.model) # expand
+                    state = action.add_child_state(s1, r, t, self.model) # expand
                     break
 
             # Back-up 
