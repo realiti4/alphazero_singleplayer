@@ -28,8 +28,8 @@ from Arena import plot_end_result
 
 
 env = gym.make('btc-dev-mcts-v1',
-            state_window=48+174,      # 48+18, 48+174
-            history_size=48,
+            # state_window=48+174,      # 48+18, 48+174
+            # history_size=48,
             testing=True,
             continuous_reward=True,
             columns = ['close'])
@@ -82,10 +82,10 @@ def agent(game, n_ep, n_mcts, max_ep_len, lr, c, gamma, data_size, batch_size, t
             t_total += n_mcts # total number of environment steps (counts the mcts steps)                
 
             if terminal:
-                # plot_end_result(plot_price, a_store)
+                plot_end_result(plot_price, a_store)
                 break
             else:
-                mcts.forward(a,s1)
+                mcts.forward(a, s1)
         
         # Finished episode
         episode_returns.append(R) # store the total episode return
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     parser.add_argument('--game', default='CartPole-v0', help='Training environment')
     parser.add_argument('--n_ep', type=int, default=500, help='Number of episodes')
     parser.add_argument('--n_mcts', type=int, default=25, help='Number of MCTS traces per step')
-    parser.add_argument('--max_ep_len', type=int, default=300, help='Maximum number of steps per episode')
+    parser.add_argument('--max_ep_len', type=int, default=3000, help='Maximum number of steps per episode')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
     parser.add_argument('--c', type=float, default=1.5, help='UCT constant')
     parser.add_argument('--temp', type=float, default=1.0, help='Temperature in normalization of counts to policy target')

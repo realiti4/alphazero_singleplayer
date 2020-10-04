@@ -36,6 +36,7 @@ class Model:
     def train(self, sb, vb, pib):
         # optimizer = optim.RMSprop(self.nnet.parameters(), lr=0.001)
         optimizer = optim.Adam(self.nnet.parameters(), lr=0.001)
+        # optimizer = optim.SGD(self.nnet.parameters(), lr=0.001)
 
         mse = nn.MSELoss()
         cross = nn.CrossEntropyLoss()
