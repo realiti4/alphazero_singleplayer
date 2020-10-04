@@ -1,3 +1,5 @@
+- results are good, but fluctuates between negative and positive max, same problem
+
 # Single player Alpha Zero Pytorch implementation
 
 This is Pytorch implementation of tmoer/alphazero_singleplayer
