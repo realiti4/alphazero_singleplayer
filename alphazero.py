@@ -11,7 +11,10 @@ import argparse
 import os
 import time
 import copy
-from gym import wrappers
+# from gym import wrappers
+import gym
+import gym_trading
+
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
@@ -21,6 +24,15 @@ from utils.make_game import make_game
 
 from nn_model import Model
 from MCTS import MCTS
+from Arena import plot_end_result
+
+
+env = gym.make('btc-dev-mcts-v1',
+            state_window=48+174,      # 48+18, 48+174
+            history_size=48,
+            testing=True,
+            continuous_reward=True,
+            columns = ['close'])
 
 
 #### Agent ##
@@ -34,16 +46,20 @@ def agent(game, n_ep, n_mcts, max_ep_len, lr, c, gamma, data_size, batch_size, t
     is_atari = is_atari_game(Env)
     mcts_env = make_game(game) if is_atari else None
 
+    Env = env   # Enable your env here
+
     D = Database(max_size=data_size,batch_size=batch_size)        
     model = Model(Env=Env, n_hidden_layers=n_hidden_layers, n_hidden_units=n_hidden_units)
+    model_dev = Model(Env=env, n_hidden_layers=n_hidden_layers, n_hidden_units=n_hidden_units)
     t_total = 0 # total steps   
     R_best = -np.Inf
  
     for ep in range(n_ep):    
         start = time.time()
-        s = Env.reset() 
+        s = Env.reset()     # (4,)
         R = 0.0 # Total return counter
         a_store = []
+        plot_price = []
         seed = np.random.randint(1e7) # draw some Env seed
         Env.seed(seed)      
         if is_atari: 
@@ -59,12 +75,14 @@ def agent(game, n_ep, n_mcts, max_ep_len, lr, c, gamma, data_size, batch_size, t
 
             # Make the true step
             a = np.random.choice(len(pi), p=pi)
+            plot_price.append(Env.current_price)
             a_store.append(a)
             s1, r, terminal, _ = Env.step(a)
             R += r
             t_total += n_mcts # total number of environment steps (counts the mcts steps)                
 
             if terminal:
+                # plot_end_result(plot_price, a_store)
                 break
             else:
                 mcts.forward(a,s1)
@@ -84,6 +102,7 @@ def agent(game, n_ep, n_mcts, max_ep_len, lr, c, gamma, data_size, batch_size, t
         for epoch in range(1):
             for sb, Vb, pib in D:
                 model.train(sb, Vb, pib)
+
 
     # Return results
     return episode_returns, timepoints, a_best, seed_best, R_best

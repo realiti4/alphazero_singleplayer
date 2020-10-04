@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from nnet import NNet
+from TradingNNet import TradingNNet
 
 from utils.helpers import check_space
 
@@ -14,6 +15,8 @@ class Model:
     def __init__(self, Env, n_hidden_layers, n_hidden_units):
         # super(model_dev, self).__init__()
 
+        self.dev = True
+
         self.action_dim, self.action_discrete  = check_space(Env.action_space)
         self.state_dim, self.state_discrete  = check_space(Env.observation_space)
         if not self.action_discrete: 
@@ -22,7 +25,10 @@ class Model:
         # self._hidden_layers = n_hidden_layers
         # self._hidden_units = n_hidden_units
 
-        self.nnet = NNet(Env, n_hidden_layers, n_hidden_units)
+        if not self.dev:
+            self.nnet = NNet(Env, n_hidden_layers, n_hidden_units)
+        else:
+            self.nnet = TradingNNet(n_hidden_layers, n_hidden_units)
 
         if use_cuda:
             self.nnet.cuda()

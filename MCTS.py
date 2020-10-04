@@ -53,10 +53,11 @@ class State():
 
     def evaluate(self):
         ''' Bootstrap the state value '''
-        pi, v = self.model.predict(self.index[None, ])
-        v = v[0]
+        # pi, v = self.model.predict(self.index[None, ])      # (1, 4)
+        pi, v = self.model.predict(self.index.reshape(1, 49))   # Dev
+        v = v[0]    # Int
         self.V = v if not self.terminal else np.array(0.0)
-        return pi, v
+        return pi, v    # (2,) and int
         # self.V = np.squeeze(self.model.predict_V(self.index[None,])) if not self.terminal else np.array(0.0)          
 
     def update(self):
@@ -96,7 +97,7 @@ class MCTS():
             
             while not state.terminal: 
                 action = state.select(c=c)
-                s1, r, t, _ = mcts_env.step(action.index)
+                s1, r, t, _ = mcts_env.step(action.index)   # (4,), int, False, _
                 if hasattr(action, 'child_state'):
                     state = action.child_state # select
                     continue

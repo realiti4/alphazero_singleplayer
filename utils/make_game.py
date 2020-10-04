@@ -24,14 +24,6 @@ register(
     reward_threshold=0.78, # optimum = .8196
 )
 
-import gym_trading
-
-env1 = gym.make('btc-dev-mcts-v1',
-            state_window=48+174,      # 48+18, 48+174
-            history_size=48,
-            testing=True,
-            continuous_reward=True,
-            columns = ['close'])
 
 def get_base_env(env):
     ''' removes all wrappers '''
