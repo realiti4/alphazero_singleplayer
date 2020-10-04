@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from helpers import check_space
+from utils.helpers import check_space
 
 
 class NNet(nn.Module):

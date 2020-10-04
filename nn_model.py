@@ -5,7 +5,7 @@ import torch.optim as optim
 
 from nnet import NNet
 
-from helpers import check_space
+from utils.helpers import check_space
 
 use_cuda = torch.cuda.is_available()
 use_cuda = False
