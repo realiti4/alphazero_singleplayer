@@ -8,7 +8,7 @@ from nnet import NNet
 from helpers import check_space
 
 use_cuda = torch.cuda.is_available()
-# use_cuda = False
+use_cuda = False
 
 class Model:
     def __init__(self, Env, n_hidden_layers, n_hidden_units):

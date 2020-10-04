@@ -200,7 +200,7 @@ def agent(game, n_ep, n_mcts, max_ep_len, lr, c, gamma, data_size, batch_size, t
         # Finished episode
         episode_returns.append(R) # store the total episode return
         timepoints.append(t_total) # store the timestep count of the episode return
-        store_safely(os.getcwd(), 'result', {'R':episode_returns, 't':timepoints})  
+        # store_safely(os.getcwd(), 'result', {'R':episode_returns, 't':timepoints})
 
         if R > R_best:
             a_best = a_store
