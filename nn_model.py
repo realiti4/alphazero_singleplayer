@@ -28,7 +28,7 @@ class Model:
         if not self.dev:
             self.nnet = NNet(Env, n_hidden_layers, n_hidden_units)
         else:
-            self.nnet = TradingNNet(n_hidden_layers, n_hidden_units)
+            self.nnet = TradingNNet(n_hidden_layers, n_hidden_units, self.action_dim)
             # self.nnet = LstmNnet(n_hidden_layers, n_hidden_units)
 
         if use_cuda:
