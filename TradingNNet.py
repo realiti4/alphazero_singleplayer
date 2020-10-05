@@ -51,3 +51,43 @@ class TradingNNet(nn.Module):
         return F.softmax(pi, dim=1), torch.tanh(v)
 
         return F.log_softmax(pi, dim=1), torch.tanh(v)
+
+
+class LstmNnet(nn.Module):
+    def __init__(self, layers, num_channels):
+        super(LstmNnet, self).__init__()
+
+        self.lstm1 = nn.LSTM(1, 128)
+
+        self.fc1 = nn.Linear(num_channels, num_channels)     # (512, 1024)
+        self.fc_bn1 = nn.BatchNorm1d(1024)
+
+        self.fc_balance = nn.Linear(1, num_channels)
+        self.fc_connect = nn.Linear(2*num_channels, num_channels)
+
+        self.fc3 = nn.Linear(num_channels, 2)
+        self.fc4 = nn.Linear(num_channels, 1)
+
+    def forward(self, s):
+        if len(s.shape) != 3:
+            s = s.unsqueeze(2)
+        s, balance = s[:, :-1, :], s[:, -1, :]
+        # s, balance = s[:, :-1], s[:, -1]
+
+        s = s.permute(1, 0, 2)
+        s, s_h = self.lstm1(s)
+        s = s[-1, :]
+
+        # s = s.squeeze(-1)
+
+        s = torch.tanh(s)   # tanh might be helping a lot after a conv TODO find out why
+
+        s = F.dropout(self.fc1(s), p=0.4)       # There was a training= variable
+
+        balance = torch.tanh(self.fc_balance(balance))
+        s = self.fc_connect(torch.cat((s, balance), dim=1))
+
+        pi = self.fc3(s)
+        v = self.fc4(s)
+
+        return F.softmax(pi, dim=1), torch.tanh(v)

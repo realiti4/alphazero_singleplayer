@@ -4,12 +4,12 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from nnet import NNet
-from TradingNNet import TradingNNet
+from TradingNNet import TradingNNet, LstmNnet
 
 from utils.helpers import check_space
 
 use_cuda = torch.cuda.is_available()
-use_cuda = False
+# use_cuda = False
 
 class Model:
     def __init__(self, Env, n_hidden_layers, n_hidden_units):
@@ -29,6 +29,7 @@ class Model:
             self.nnet = NNet(Env, n_hidden_layers, n_hidden_units)
         else:
             self.nnet = TradingNNet(n_hidden_layers, n_hidden_units)
+            # self.nnet = LstmNnet(n_hidden_layers, n_hidden_units)
 
         if use_cuda:
             self.nnet.cuda()
