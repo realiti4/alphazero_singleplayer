@@ -27,7 +27,7 @@ from MCTS import MCTS
 from Arena import plot_end_result
 
 
-env = gym.make('btc-dev-mcts-v1',
+env = gym.make('btc-mcts-v1',
             # state_window=48+174,      # 48+18, 48+174
             # history_size=48,
             testing=True,

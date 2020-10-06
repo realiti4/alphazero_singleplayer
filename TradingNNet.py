@@ -11,7 +11,7 @@ import torch.optim as optim
 
 
 class TradingNNet(nn.Module):
-    def __init__(self, layers, num_channels):
+    def __init__(self, layers, num_channels, action_dim):
         super(TradingNNet, self).__init__()
         # self.args = args
 
@@ -25,7 +25,7 @@ class TradingNNet(nn.Module):
         self.fc_balance = nn.Linear(1, num_channels)
         self.fc_connect = nn.Linear(2*num_channels, num_channels)
 
-        self.fc3 = nn.Linear(num_channels, 2)
+        self.fc3 = nn.Linear(num_channels, action_dim)
         self.fc4 = nn.Linear(num_channels, 1)
 
     def forward(self, s):
